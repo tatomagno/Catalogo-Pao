@@ -131,28 +131,36 @@
     }
 
     function render() {
-        const t = document.getElementById('lista-tienda');
-        const a = document.getElementById('lista-admin');
-        t.innerHTML = ''; a.innerHTML = '';
-        productosGlobal.forEach(p => {
-            t.innerHTML += `
-                <div class="card">
-                    <img src="${p.img}">
-                    <div class="card-info">
-                        <h4>${p.nombre}</h4>
-                        <span class="precio">$${p.precio}</span>
-                    </div>
-                    <input type="number" class="cant-item" data-id="${p.id}" value="0" min="0" onchange="calc()" style="width:45px">
-                </div>`;
-            a.innerHTML += `
-                <div class="card">
-                    <img src="${p.img}">
-                    <div class="card-info"><b>${p.nombre}</b></div>
-                    <button onclick="prepararEdicion(${p.id})">✏️</button>
-                    <button onclick="eliminarProducto(${p.id})" style="color:red; margin-left:5px;">🗑️</button>
-                </div>`;
-        });
-    }
+    const t = document.getElementById('lista-tienda');
+    const a = document.getElementById('lista-admin');
+    t.innerHTML = ''; a.innerHTML = '';
+
+    productosGlobal.forEach(p => {
+        // Render Tienda (Agregamos el párrafo de descripción)
+        t.innerHTML += `
+            <div class="card">
+                <img src="${p.img || 'https://via.placeholder.com/70'}">
+                <div class="card-info">
+                    <h4>${p.nombre}</h4>
+                    <p style="font-size: 0.85rem; color: #666; margin: 5px 0;">${p.descripcion || ''}</p>
+                    <span class="precio" style="font-weight: bold; color: #333;">$${p.precio}</span>
+                </div>
+                <input type="number" class="cant-item" data-id="${p.id}" value="0" min="0" onchange="calc()" style="width:45px">
+            </div>`;
+
+        // Render Admin
+        a.innerHTML += `
+            <div class="card">
+                <img src="${p.img || 'https://via.placeholder.com/70'}">
+                <div class="card-info">
+                    <b>${p.nombre}</b>
+                    <div style="font-size: 0.75rem; color: #888;">${p.descripcion || ''}</div>
+                </div>
+                <button onclick="prepararEdicion(${p.id})">✏️</button>
+                <button onclick="eliminarProducto(${p.id})" style="color:red; margin-left:5px;">🗑️</button>
+            </div>`;
+    });
+}
 
     function calc() {
         let total = 0;
@@ -208,4 +216,5 @@
     cargarProductos();
 </script>
 </body>
+
 </html>
