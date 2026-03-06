@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Supabase</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --whatsapp: #25D366; --admin: #007bff; --fondo: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--fondo); margin: 0; padding: 15px; }
+        .contenedor { max-width: 500px; margin: auto; }
+        .tabs { display: flex; margin-bottom: 15px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tab-btn { flex: 1; padding: 15px; border: none; cursor: pointer; background: #ddd; font-weight: bold; }
+        .tab-active { background: white; color: var(--admin); border-bottom: 4px solid var(--admin); }
+        .seccion { display: none; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .visible { display: block; }
+        .card { display: flex; align-items: center; border-bottom: 1px solid #eee; padding: 15px 0; gap: 15px; }
+        .card img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; background: #eee; }
+        .card-info { flex-grow: 1; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-principal { background: var(--admin); color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-whatsapp { background: var(--whatsapp); color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+<div class="contenedor">
+    <div class="tabs">
+        <button id="btnTienda" class="tab-btn tab-active" onclick="cambiarTab('tienda')">🛒 TIENDA</button>
+        <button id="btnAdmin" class="tab-btn" onclick="cambiarTab('admin')">⚙️ ADMIN</button>
+    </div>
+
+    <div id="tienda" class="seccion visible">
+        <div id="lista-tienda">Cargando productos...</div>
+        <div style="margin-top: 20px; border-top: 2px solid #eee; padding-top: 15px;">
+            <input type="text" id="nombreCliente" placeholder="Tu Nombre">
+            <h3 id="total-display" style="text-align: right;">Total: $0</h3>
+            <button class="btn-whatsapp" onclick="enviarPedido()">Enviar por WhatsApp</button>
+        </div>
+    </div>
+
+    <div id="admin" class="seccion">
+        <h3 id="form-titulo">Nuevo Producto</h3>
+        <input type="hidden" id="edit-id">
+        <input type="hidden" id="edit-img-url">
+        
+        <input type="text" id="admNombre" placeholder="Nombre del producto">
+        <input type="number" id="admPrecio" placeholder="Precio ($)">
+        <textarea id="admDesc" placeholder="Descripción"></textarea>
+        
+        <label style="font-size: 0.8rem; color: #666;">Seleccionar Foto:</label>
+        <input type="file" id="admFile" accept="image/*">
+        
+        <button id="btn-guardar" class="btn-principal" onclick="guardarProducto()">Guardar Producto</button>
+        <button id="btn-cancelar" class="btn-principal" style="background:#888; display:none;" onclick="cancelarEdicion()">Cancelar Edición</button>
+        
+        <hr style="margin: 25px 0;">
+        <div id="lista-admin"></div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = "https://szmnlmxmczgmftqmlayo.supabase.co";
+    // Tu última Anon Key
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6bW5sbXhtY3pnbWZ0cW1sYXlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MzYzNzYsImV4cCI6MjA4ODMxMjM3Nn0.O6oVktMSKxv35e1fk7Kw8Sfx0PWQVqhFn2YjHdZTNz4";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let productosGlobal = [];
+
+    async function cargarProductos() {
+        const { data, error } = await _supabase.from('productos').select('*').order('id', { ascending: false });
+        if (error) {
+            console.error(error);
+            document.getElementById('lista-tienda').innerText = "Error de conexión.";
+        } else {
+            productosGlobal = data;
+            render();
+        }
+    }
+
+    async function guardarProducto() {
+        const btn = document.getElementById('btn-guardar');
+        const file = document.getElementById('admFile').files[0];
+        const id = document.getElementById('edit-id').value;
+        const nombre = document.getElementById('admNombre').value;
+        const precio = document.getElementById('admPrecio').value;
+        const desc = document.getElementById('admDesc').value;
+        let urlFinal = document.getElementById('edit-img-url').value;
+
+        if (!nombre || !precio) return alert("Completa nombre y precio.");
+
+        btn.innerText = "Procesando..."; btn.disabled = true;
+
+        try {
+            if (file) {
+                const ext = file.name.split('.').pop();
+                const nombreLimpio = `${Date.now()}.${ext}`;
+                const { error: upErr } = await _supabase.storage.from('imagenes').upload(nombreLimpio, file);
+                if (upErr) throw upErr;
+                const { data: pUrl } = _supabase.storage.from('imagenes').getPublicUrl(nombreLimpio);
+                urlFinal = pUrl.publicUrl;
+            }
+
+            // CORRECCIÓN: Usamos 'descripcion' para que coincida con tu Supabase
+            const datos = { nombre, precio: parseFloat(precio), descripcion: desc, img: urlFinal };
+
+            if (id) {
+                const { error: errUpd } = await _supabase.from('productos').update(datos).eq('id', id);
+                if (errUpd) throw errUpd;
+            } else {
+                if (!urlFinal) throw new Error("Falta la imagen.");
+                const { error: errIns } = await _supabase.from('productos').insert([datos]);
+                if (errIns) throw errIns;
+            }
+
+            alert("¡Guardado!");
+            cancelarEdicion();
+            cargarProductos();
+        } catch (err) {
+            alert("Error: " + err.message);
+        } finally {
+            btn.innerText = "Guardar Producto"; btn.disabled = false;
+        }
+    }
+
+    async function eliminarProducto(id) {
+        if (confirm("¿Eliminar?")) {
+            await _supabase.from('productos').delete().eq('id', id);
+            cargarProductos();
+        }
+    }
+
+    function render() {
+        const t = document.getElementById('lista-tienda');
+        const a = document.getElementById('lista-admin');
+        t.innerHTML = ''; a.innerHTML = '';
+        productosGlobal.forEach(p => {
+            t.innerHTML += `
+                <div class="card">
+                    <img src="${p.img}">
+                    <div class="card-info">
+                        <h4>${p.nombre}</h4>
+                        <span class="precio">$${p.precio}</span>
+                    </div>
+                    <input type="number" class="cant-item" data-id="${p.id}" value="0" min="0" onchange="calc()" style="width:45px">
+                </div>`;
+            a.innerHTML += `
+                <div class="card">
+                    <img src="${p.img}">
+                    <div class="card-info"><b>${p.nombre}</b></div>
+                    <button onclick="prepararEdicion(${p.id})">✏️</button>
+                    <button onclick="eliminarProducto(${p.id})" style="color:red; margin-left:5px;">🗑️</button>
+                </div>`;
+        });
+    }
+
+    function calc() {
+        let total = 0;
+        document.querySelectorAll('.cant-item').forEach(i => {
+            const p = productosGlobal.find(x => x.id == i.dataset.id);
+            total += (i.value * p.precio);
+        });
+        document.getElementById('total-display').innerText = `Total: $${total}`;
+    }
+
+    function enviarPedido() {
+        const cliente = document.getElementById('nombreCliente').value;
+        if (!cliente) return alert("Ingresa tu nombre.");
+        let m = `*PEDIDO:* ${cliente.toUpperCase()}\n`;
+        document.querySelectorAll('.cant-item').forEach(i => {
+            if (i.value > 0) {
+                const p = productosGlobal.find(x => x.id == i.dataset.id);
+                m += `- ${p.nombre} x${i.value}\n`;
+            }
+        });
+        window.open(`https://wa.me/5493517519141?text=${encodeURIComponent(m)}`);
+    }
+
+    function prepararEdicion(id) {
+        const p = productosGlobal.find(x => x.id == id);
+        document.getElementById('edit-id').value = p.id;
+        document.getElementById('edit-img-url').value = p.img;
+        document.getElementById('admNombre').value = p.nombre;
+        document.getElementById('admPrecio').value = p.precio;
+        // CORRECCIÓN: Leemos de 'descripcion'
+        document.getElementById('admDesc').value = p.descripcion || '';
+        document.getElementById('form-titulo').innerText = "Editando...";
+        document.getElementById('btn-cancelar').style.display = "block";
+        cambiarTab('admin');
+    }
+
+    function cancelarEdicion() {
+        document.getElementById('edit-id').value = '';
+        document.getElementById('admNombre').value = '';
+        document.getElementById('admPrecio').value = '';
+        document.getElementById('admDesc').value = '';
+        document.getElementById('admFile').value = '';
+        document.getElementById('btn-cancelar').style.display = "none";
+    }
+
+    function cambiarTab(tab) {
+        document.querySelectorAll('.seccion').forEach(s => s.classList.remove('visible'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+        document.getElementById(tab).classList.add('visible');
+        document.getElementById('btn' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('tab-active');
+    }
+
+    cargarProductos();
+</script>
+</body>
+</html>
