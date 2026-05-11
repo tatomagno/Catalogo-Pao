@@ -489,6 +489,43 @@
             border: 1px dashed var(--border);
             padding: 5px;
         }
+
+        .badge-categoria {
+            display: inline-block;
+            background: #e0e7ff;
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        select {
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            background: #f8fafc;
+            color: var(--text-main);
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: white;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
     </style>
 </head>
 
@@ -507,12 +544,26 @@
             <button id="btnAdmin" class="tab-btn" onclick="cambiarTab('admin')">Administración</button>
         </div>
 
-        <!-- BUSCADOR GLOBAL -->
-        <div class="form-group" style="margin-bottom: 25px; position: relative;">
+        <!-- BUSCADOR GLOBAL Y FILTRO -->
+        <div class="form-group" style="margin-bottom: 10px; position: relative;">
             <span
                 style="position: absolute; left: 15px; top: 14px; font-size: 1.1rem; color: var(--text-muted); pointer-events: none;">🔍</span>
             <input type="text" id="buscadorGlobal" placeholder="Buscar productos (ej. termo)..." onkeyup="render()"
                 style="padding-left: 45px; background: white; margin: 0; border: 1px solid var(--primary); box-shadow: 0 2px 10px rgba(99, 102, 241, 0.1);">
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 25px;">
+            <select id="filtroCategoria" onchange="render()" style="margin: 0; background-color: white; border-color: var(--border);">
+                <option value="todas">Todas las categorías</option>
+                <option value="Hogar">Hogar</option>
+                <option value="Herramientas">Herramientas</option>
+                <option value="Belleza">Belleza</option>
+                <option value="Tecnologia">Tecnología</option>
+                <option value="Electrodomesticos">Electrodomésticos</option>
+                <option value="Blanco">Blanco</option>
+                <option value="Juguetes">Juguetes</option>
+                <option value="Otras">Otras categorías...</option>
+            </select>
         </div>
 
         <!-- SECCION TIENDA -->
@@ -555,6 +606,20 @@
                 <div class="form-group">
                     <label>Precio ($)</label>
                     <input type="number" id="admPrecio" placeholder="0.00">
+                </div>
+
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="admCategoria">
+                        <option value="Hogar">Hogar</option>
+                        <option value="Herramientas">Herramientas</option>
+                        <option value="Belleza">Belleza</option>
+                        <option value="Tecnologia">Tecnología</option>
+                        <option value="Electrodomesticos">Electrodomésticos</option>
+                        <option value="Blanco">Blanco</option>
+                        <option value="Juguetes">Juguetes</option>
+                        <option value="Otras">Otras categorías...</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -690,6 +755,7 @@
             const id = document.getElementById('edit-id').value;
             const nombre = document.getElementById('admNombre').value.trim();
             const precio = document.getElementById('admPrecio').value;
+            const categoria = document.getElementById('admCategoria').value;
             const desc = document.getElementById('admDesc').value.trim();
             let urlFinal = document.getElementById('edit-img-url').value;
 
@@ -708,7 +774,7 @@
                     urlFinal = pUrl.publicUrl;
                 }
 
-                const datos = { nombre, precio: parseFloat(precio), descripcion: desc, img: urlFinal };
+                const datos = { nombre, precio: parseFloat(precio), categoria: categoria, descripcion: desc, img: urlFinal };
 
                 if (id) {
                     const { error: errUpd } = await _supabase.from('productos').update(datos).eq('id', id);
@@ -750,6 +816,7 @@
             document.getElementById('edit-img-url').value = p.img;
             document.getElementById('admNombre').value = p.nombre;
             document.getElementById('admPrecio').value = p.precio;
+            document.getElementById('admCategoria').value = p.categoria || 'Hogar';
             document.getElementById('admDesc').value = p.descripcion || '';
 
             const preview = document.getElementById('preview-img');
@@ -770,6 +837,7 @@
             document.getElementById('edit-img-url').value = '';
             document.getElementById('admNombre').value = '';
             document.getElementById('admPrecio').value = '';
+            document.getElementById('admCategoria').value = 'Hogar';
             document.getElementById('admDesc').value = '';
             document.getElementById('admFile').value = '';
             document.getElementById('preview-img').style.display = 'none';
@@ -785,11 +853,14 @@
 
             const searchInput = document.getElementById('buscadorGlobal');
             const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const catInput = document.getElementById('filtroCategoria');
+            const categoriaSeleccionada = catInput ? catInput.value : 'todas';
 
-            let filtrados = productosGlobal.filter(p =>
-                p.nombre.toLowerCase().includes(query) ||
-                (p.descripcion && p.descripcion.toLowerCase().includes(query))
-            );
+            let filtrados = productosGlobal.filter(p => {
+                const matchTexto = p.nombre.toLowerCase().includes(query) || (p.descripcion && p.descripcion.toLowerCase().includes(query));
+                const matchCategoria = categoriaSeleccionada === 'todas' || p.categoria === categoriaSeleccionada;
+                return matchTexto && matchCategoria;
+            });
 
             if (filtrados.length === 0) {
                 t.innerHTML = '<div style="text-align:center; padding: 40px 20px; color: var(--text-muted);">No se encontraron productos.</div>';
@@ -805,6 +876,7 @@
                 <div class="card">
                     <img src="${p.img || 'https://via.placeholder.com/85?text=Sin+Foto'}" alt="${p.nombre}">
                     <div class="card-info" onclick="this.classList.toggle('expanded')" title="Tocar para ver detalle">
+                        ${p.categoria ? `<span class="badge-categoria">${p.categoria}</span>` : ''}
                         <h4>${p.nombre}</h4>
                         <p>${p.descripcion || 'Sin descripción'}</p>
                         <div class="precio">$${p.precio}</div>
@@ -821,6 +893,7 @@
                 <div class="card">
                     <img src="${p.img || 'https://via.placeholder.com/85?text=Sin+Foto'}" alt="${p.nombre}">
                     <div class="card-info" onclick="this.classList.toggle('expanded')" title="Tocar para ver detalle">
+                        ${p.categoria ? `<span class="badge-categoria">${p.categoria}</span>` : ''}
                         <h4 style="margin:0 0 5px 0;">${p.nombre} <span style="font-size:0.9rem; color:var(--primary);">($${p.precio})</span></h4>
                         <p style="margin:0;">${p.descripcion || 'Sin descripción'}</p>
                     </div>
