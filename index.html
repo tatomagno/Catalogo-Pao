@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventas PAO - Catálogo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --whatsapp: #25D366;
+            --whatsapp-hover: #1da851;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 140px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            margin: 5px 0 0;
+            font-size: 0.95rem;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .contenedor {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #e0e7ff;
+            border-radius: 12px;
+            padding: 6px;
+            margin-bottom: 25px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            cursor: pointer;
+            background: transparent;
+            font-weight: 600;
+            color: var(--primary);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .tab-active {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .seccion {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .visible {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            gap: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 1px solid var(--border);
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+
+        .card img {
+            width: 85px;
+            height: 85px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #f1f5f9;
+            flex-shrink: 0;
+            border: 1px solid #f1f5f9;
+        }
+
+        .card-info {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .card-info h4 {
+            margin: 0 0 4px 0;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-info p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0 0 8px 0;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .precio {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.15rem;
+        }
+
+        .cantidad-control {
+            display: flex;
+            align-items: center;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .btn-cant {
+            background: transparent;
+            border: none;
+            color: var(--primary);
+            font-size: 1.5rem;
+            width: 42px;
+            height: 42px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            font-weight: 500;
+            padding: 0;
+        }
+
+        .btn-cant:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-cant:active {
+            background: #cbd5e1;
+        }
+
+        .valor-cant {
+            width: 40px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border: none;
+            background: transparent;
+            pointer-events: none;
+            color: var(--text-main);
+            padding: 0 !important;
+            margin: 0 !important;
+            height: 42px;
+            box-sizing: border-box;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+            color: var(--text-main);
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn {
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-principal {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-principal:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-principal:active {
+            transform: translateY(1px);
+        }
+
+        .btn-secundario {
+            background: #cbd5e1;
+            color: var(--text-main);
+            width: 100%;
+        }
+
+        .btn-secundario:hover {
+            background: #94a3b8;
+        }
+
+        .btn-whatsapp {
+            background: var(--whatsapp);
+            color: white;
+            width: 100%;
+            font-size: 1.05rem;
+        }
+
+        .btn-whatsapp:hover {
+            background: var(--whatsapp-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+        }
+
+        .btn-icon {
+            background: #f1f5f9;
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            border: 1px solid transparent;
+        }
+
+        .btn-icon:hover {
+            background: #e2e8f0;
+            border-color: var(--border);
+        }
+
+        .btn-icon.danger {
+            color: var(--danger);
+            background: #fef2f2;
+        }
+
+        .btn-icon.danger:hover {
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+
+        .sticky-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+            border-top: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .sticky-bar .contenedor {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .info-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-total h3 {
+            margin: 0;
+            font-size: 1.4rem;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: white;
+            color: var(--text-main);
+            padding: 14px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-left: 4px solid var(--primary);
+        }
+
+        .toast.success {
+            border-left-color: var(--whatsapp);
+        }
+
+        .toast.error {
+            border-left-color: var(--danger);
+        }
+
+        .toast.fadeOut {
+            animation: fadeOutRight 0.3s forwards ease-in;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+        }
+
+        .loader-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px 0;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .spinner {
+            width: 45px;
+            height: 45px;
+            border: 4px solid #e0e7ff;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+
+        #preview-img {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 10px;
+            display: none;
+            margin-bottom: 15px;
+            border: 1px dashed var(--border);
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="toast-container"></div>
+
+    <header class="header">
+        <h1>🛒 Ventas PAO</h1>
+        <p>Catálogo de productos exclusivos</p>
+    </header>
+
+    <div class="contenedor">
+        <div class="tabs">
+            <button id="btnTienda" class="tab-btn tab-active" onclick="cambiarTab('tienda')">Catálogo</button>
+            <button id="btnAdmin" class="tab-btn" onclick="cambiarTab('admin')">Administración</button>
+        </div>
+
+        <!-- BUSCADOR GLOBAL -->
+        <div class="form-group" style="margin-bottom: 25px; position: relative;">
+            <span
+                style="position: absolute; left: 15px; top: 14px; font-size: 1.1rem; color: var(--text-muted); pointer-events: none;">🔍</span>
+            <input type="text" id="buscadorGlobal" placeholder="Buscar productos (ej. termo)..." onkeyup="render()"
+                style="padding-left: 45px; background: white; margin: 0; border: 1px solid var(--primary); box-shadow: 0 2px 10px rgba(99, 102, 241, 0.1);">
+        </div>
+
+        <!-- SECCION TIENDA -->
+        <div id="tienda" class="seccion visible">
+            <div id="lista-tienda">
+                <div class="loader-container">
+                    <div class="spinner"></div>
+                    <div>Cargando productos...</div>
+                </div>
+            </div>
+
+            <div class="sticky-bar" id="barra-carrito">
+                <div class="contenedor">
+                    <input type="text" id="nombreCliente" placeholder="Tu Nombre para el pedido">
+                    <div class="info-total">
+                        <h3 id="total-display">Total: $0</h3>
+                        <button class="btn btn-whatsapp" style="width: auto; padding: 12px 25px;"
+                            onclick="enviarPedido()">
+                            Enviar Pedido 💬
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCION ADMIN -->
+        <div id="admin" class="seccion">
+            <div
+                style="background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid var(--border);">
+                <h3 id="form-titulo" style="margin-top: 0; margin-bottom: 20px; color: var(--text-main);">✨ Nuevo
+                    Producto</h3>
+                <input type="hidden" id="edit-id">
+                <input type="hidden" id="edit-img-url">
+
+                <div class="form-group">
+                    <label>Nombre del producto</label>
+                    <input type="text" id="admNombre" placeholder="Ej. Camiseta Deportiva">
+                </div>
+
+                <div class="form-group">
+                    <label>Precio ($)</label>
+                    <input type="number" id="admPrecio" placeholder="0.00">
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="admDesc" placeholder="Detalles del producto..." rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Foto del producto</label>
+                    <input type="file" id="admFile" accept="image/*" onchange="previewImage(event)">
+                </div>
+
+                <img id="preview-img" src="" alt="Vista previa">
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="btn-guardar" class="btn btn-principal" onclick="guardarProducto()">Guardar
+                        Producto</button>
+                    <button id="btn-cancelar" class="btn btn-secundario" style="display:none;"
+                        onclick="cancelarEdicion()">Cancelar</button>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">Productos Registrados</h3>
+            <div id="lista-admin"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://szmnlmxmczgmftqmlayo.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6bW5sbXhtY3pnbWZ0cW1sYXlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MzYzNzYsImV4cCI6MjA4ODMxMjM3Nn0.O6oVktMSKxv35e1fk7Kw8Sfx0PWQVqhFn2YjHdZTNz4";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let productosGlobal = [];
+        let carritoGlobal = {};
+
+        // Sistema de Notificaciones (Toast)
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            let icon = '💡';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '⚠️';
+
+            toast.innerHTML = `<span style="font-size: 1.2rem;">${icon}</span> <div>${msg}</div>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('fadeOut');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        async function cargarProductos() {
+            try {
+                const { data, error } = await _supabase.from('productos').select('*').order('id', { ascending: false });
+                if (error) throw error;
+                productosGlobal = data;
+                render();
+            } catch (error) {
+                console.error(error);
+                document.getElementById('lista-tienda').innerHTML = `<div style="text-align:center; padding: 20px; color: var(--danger);">Error de conexión: ${error.message}</div>`;
+            }
+        }
+
+        // Funciones del Carrito / Cantidades
+        function cambiarCantidad(id, delta) {
+            let val = carritoGlobal[id] || 0;
+            val += delta;
+            if (val < 0) val = 0;
+            carritoGlobal[id] = val;
+
+            const input = document.getElementById(`cant-${id}`);
+            if (input) input.value = val;
+            calc();
+        }
+
+        function calc() {
+            let total = 0;
+            for (let id in carritoGlobal) {
+                const cant = carritoGlobal[id];
+                if (cant > 0) {
+                    const p = productosGlobal.find(x => x.id == id);
+                    if (p) total += (cant * parseFloat(p.precio));
+                }
+            }
+            document.getElementById('total-display').innerText = `Total: $${total}`;
+        }
+
+        function enviarPedido() {
+            const cliente = document.getElementById('nombreCliente').value.trim();
+            if (!cliente) return showToast("Por favor, ingresa tu nombre para el pedido.", "error");
+
+            let m = `*NUEVO PEDIDO* 🛍️\n*Cliente:* ${cliente.toUpperCase()}\n\n`;
+            let items = 0;
+
+            for (let id in carritoGlobal) {
+                const cant = carritoGlobal[id];
+                if (cant > 0) {
+                    const p = productosGlobal.find(x => x.id == id);
+                    if (p) {
+                        m += `▪️ ${p.nombre} x${cant} ($${parseFloat(p.precio) * cant})\n`;
+                        items++;
+                    }
+                }
+            }
+
+            if (items === 0) return showToast("Agrega al menos un producto al carrito.", "error");
+
+            const totalText = document.getElementById('total-display').innerText;
+            m += `\n*${totalText}*`;
+
+            window.open(`https://wa.me/5493517519141?text=${encodeURIComponent(m)}`, '_blank');
+            showToast("Abriendo WhatsApp...", "success");
+        }
+
+        // Funciones de Admin
+        function previewImage(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('preview-img');
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        async function guardarProducto() {
+            const btn = document.getElementById('btn-guardar');
+            const file = document.getElementById('admFile').files[0];
+            const id = document.getElementById('edit-id').value;
+            const nombre = document.getElementById('admNombre').value.trim();
+            const precio = document.getElementById('admPrecio').value;
+            const desc = document.getElementById('admDesc').value.trim();
+            let urlFinal = document.getElementById('edit-img-url').value;
+
+            if (!nombre || !precio) return showToast("Completa nombre y precio del producto.", "error");
+
+            btn.innerText = "⏳ Guardando...";
+            btn.disabled = true;
+
+            try {
+                if (file) {
+                    const ext = file.name.split('.').pop();
+                    const nombreLimpio = `prod_${Date.now()}.${ext}`;
+                    const { error: upErr } = await _supabase.storage.from('imagenes').upload(nombreLimpio, file);
+                    if (upErr) throw upErr;
+                    const { data: pUrl } = _supabase.storage.from('imagenes').getPublicUrl(nombreLimpio);
+                    urlFinal = pUrl.publicUrl;
+                }
+
+                const datos = { nombre, precio: parseFloat(precio), descripcion: desc, img: urlFinal };
+
+                if (id) {
+                    const { error: errUpd } = await _supabase.from('productos').update(datos).eq('id', id);
+                    if (errUpd) throw errUpd;
+                    showToast("Producto actualizado exitosamente.", "success");
+                } else {
+                    if (!urlFinal) throw new Error("Debes seleccionar una imagen para el producto nuevo.");
+                    const { error: errIns } = await _supabase.from('productos').insert([datos]);
+                    if (errIns) throw errIns;
+                    showToast("Producto agregado exitosamente.", "success");
+                }
+
+                cancelarEdicion();
+                cargarProductos();
+            } catch (err) {
+                showToast(err.message, "error");
+            } finally {
+                btn.innerText = "Guardar Producto";
+                btn.disabled = false;
+            }
+        }
+
+        async function eliminarProducto(id) {
+            if (confirm("¿Estás seguro de que deseas eliminar este producto?")) {
+                try {
+                    const { error } = await _supabase.from('productos').delete().eq('id', id);
+                    if (error) throw error;
+                    showToast("Producto eliminado.", "info");
+                    cargarProductos();
+                } catch (err) {
+                    showToast(err.message, "error");
+                }
+            }
+        }
+
+        function prepararEdicion(id) {
+            const p = productosGlobal.find(x => x.id == id);
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('edit-img-url').value = p.img;
+            document.getElementById('admNombre').value = p.nombre;
+            document.getElementById('admPrecio').value = p.precio;
+            document.getElementById('admDesc').value = p.descripcion || '';
+
+            const preview = document.getElementById('preview-img');
+            if (p.img) {
+                preview.src = p.img;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+
+            document.getElementById('form-titulo').innerText = "✏️ Editando: " + p.nombre;
+            document.getElementById('btn-cancelar').style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicion() {
+            document.getElementById('edit-id').value = '';
+            document.getElementById('edit-img-url').value = '';
+            document.getElementById('admNombre').value = '';
+            document.getElementById('admPrecio').value = '';
+            document.getElementById('admDesc').value = '';
+            document.getElementById('admFile').value = '';
+            document.getElementById('preview-img').style.display = 'none';
+
+            document.getElementById('form-titulo').innerText = "✨ Nuevo Producto";
+            document.getElementById('btn-cancelar').style.display = "none";
+        }
+
+        function render() {
+            const t = document.getElementById('lista-tienda');
+            const a = document.getElementById('lista-admin');
+            t.innerHTML = ''; a.innerHTML = '';
+
+            const searchInput = document.getElementById('buscadorGlobal');
+            const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+            let filtrados = productosGlobal.filter(p =>
+                p.nombre.toLowerCase().includes(query) ||
+                (p.descripcion && p.descripcion.toLowerCase().includes(query))
+            );
+
+            if (filtrados.length === 0) {
+                t.innerHTML = '<div style="text-align:center; padding: 40px 20px; color: var(--text-muted);">No se encontraron productos.</div>';
+                a.innerHTML = '<div style="text-align:center; padding: 40px 20px; color: var(--text-muted);">No se encontraron productos.</div>';
+                calc();
+                return;
+            }
+
+            filtrados.forEach(p => {
+                const cant = carritoGlobal[p.id] || 0;
+                // Render Tienda
+                t.innerHTML += `
+                <div class="card">
+                    <img src="${p.img || 'https://via.placeholder.com/85?text=Sin+Foto'}" alt="${p.nombre}">
+                    <div class="card-info">
+                        <h4>${p.nombre}</h4>
+                        <p>${p.descripcion || 'Sin descripción'}</p>
+                        <div class="precio">$${p.precio}</div>
+                    </div>
+                    <div class="cantidad-control">
+                        <button class="btn-cant" onclick="cambiarCantidad(${p.id}, -1)">-</button>
+                        <input type="text" id="cant-${p.id}" class="valor-cant cant-item" data-id="${p.id}" value="${cant}" readonly>
+                        <button class="btn-cant" onclick="cambiarCantidad(${p.id}, 1)">+</button>
+                    </div>
+                </div>`;
+
+                // Render Admin
+                a.innerHTML += `
+                <div class="card">
+                    <img src="${p.img || 'https://via.placeholder.com/85?text=Sin+Foto'}" alt="${p.nombre}">
+                    <div class="card-info">
+                        <h4 style="margin:0 0 5px 0;">${p.nombre} <span style="font-size:0.9rem; color:var(--primary);">($${p.precio})</span></h4>
+                        <p style="margin:0;">${p.descripcion || 'Sin descripción'}</p>
+                    </div>
+                    <div class="admin-actions">
+                        <button class="btn-icon" onclick="prepararEdicion(${p.id})" title="Editar">✏️</button>
+                        <button class="btn-icon danger" onclick="eliminarProducto(${p.id})" title="Eliminar">🗑️</button>
+                    </div>
+                </div>`;
+            });
+
+            calc(); // Recalcular total por si se recargó la lista
+        }
+
+        function cambiarTab(tab) {
+            document.querySelectorAll('.seccion').forEach(s => s.classList.remove('visible'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+            document.getElementById(tab).classList.add('visible');
+            document.getElementById('btn' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('tab-active');
+        }
+
+        // Iniciar
+        cargarProductos();
+    </script>
+</body>
+
+</html>
