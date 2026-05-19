@@ -907,7 +907,21 @@
             calc(); // Recalcular total por si se recargó la lista
         }
 
+        let isAdminLoggedIn = false;
+
         function cambiarTab(tab) {
+            if (tab === 'admin' && !isAdminLoggedIn) {
+                const pass = prompt("Ingrese la contraseña de administrador:");
+                // Puedes cambiar "pao123" por la contraseña que prefieras
+                if (pass === "pao123") { 
+                    isAdminLoggedIn = true;
+                    showToast("Acceso concedido", "success");
+                } else {
+                    showToast("Contraseña incorrecta", "error");
+                    return; // Evita que se abra la pestaña
+                }
+            }
+
             document.querySelectorAll('.seccion').forEach(s => s.classList.remove('visible'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
             document.getElementById(tab).classList.add('visible');
